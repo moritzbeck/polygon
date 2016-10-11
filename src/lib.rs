@@ -13,8 +13,8 @@ pub enum Slope {
 }
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Point {
-    x: f64,
-    y: f64
+    pub x: f64,
+    pub y: f64
 }
 impl Point {
     pub fn new(x: f64, y: f64) -> Point {
@@ -114,11 +114,18 @@ impl Polygon {
             points: pts.to_vec() //TODO: do it without copying?!
         }
     }
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.points.len()
     }
     pub fn add(&mut self, p: Point) {
         self.points.push(p);
+    }
+    pub fn points(&self) -> &[Point] {
+        //self.points.clone()
+        &self.points[..]
+    }
+    pub fn points_mut(&mut self) -> &mut [Point] {
+        &mut self.points[..]
     }
     pub fn edges(&self) -> Vec<Line> {
         if self.points.len() <= 1 { return Vec::new(); }
@@ -129,6 +136,20 @@ impl Polygon {
             lines.push(l);
         }
         lines
+    }
+    pub fn is_simple(&self) -> bool {
+        for l1 in self.edges() {
+            for l2 in self.edges() {
+                if l1.from == l2.from || l1.from == l2.to
+                    || l1.to == l2.from || l1.to == l2.to {
+                    break;
+                }
+                if l1.intersects(&l2) {
+                    return false;
+                }
+            }
+        }
+        true
     }
     pub fn contains(&self, p: Point) -> bool {
         /*
@@ -287,6 +308,19 @@ mod tests {
     }
     #[test]
     fn polygon_contains_works_2() {
+//                8     6
+//   polygon =    |\   /|
+//                | \ / |
+//          a-----9  7  5
+//          |           |
+//          |           |
+//          |           |
+//          |           |
+//          |           |
+//          b--0     3--4
+//             |     |
+//             |     |
+//             1-----2
         let points = [Point::new_u(1,1), Point::new_u(1,0), Point::new_u(3, 0),
             Point::new_u(3,1), Point::new_u(4,1), Point::new_u(4,3),
             Point::new_u(4,4), Point::new_u(3,3), Point::new_u(2,4),
