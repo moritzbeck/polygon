@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 fn min_max(a: f64, b: f64) -> (f64, f64) {
     if a <= b {
         (a, b)
@@ -6,23 +8,31 @@ fn min_max(a: f64, b: f64) -> (f64, f64) {
     }
 }
 
+/// Describes the slope of a Line.
 #[derive(Debug, PartialEq)]
 pub enum Slope {
+    /// The line is exactly vertical, i.e l.from.x == l.to.x
     Vertical,
+    /// The line is not vertical and the slope is given.
     Slope(f64)
 }
+/// A point in the 2D-plane.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Point {
+    /// x-coordinate
     pub x: f64,
+    /// y-coordinate
     pub y: f64
 }
 impl Point {
+    /// Creates a new Point with the given coordinates.
     pub fn new(x: f64, y: f64) -> Point {
         Point {
             x: x,
             y: y
         }
     }
+    /// Creates a new Point with the given integer coordinates.
     pub fn new_u(x: u32, y: u32) -> Point {
         Point {
             x: x as f64,
@@ -30,24 +40,53 @@ impl Point {
         }
     }
 }
+/// A line in the 2D-plane.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Line {
+    /// starting point
     pub from:   Point,
+    /// endpoint
     pub to:     Point
 }
 impl Line {
+    /// Creates a new line between two points.
     pub fn new(from: Point, to: Point) -> Line {
         Line {
             from: from,
             to: to
         }
     }
+    /// Reverses the direction of the current line.
+    ///
+    /// ```
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(0.7, 1.5);
+    /// let line = Line::new(p1, p2);
+    ///
+    /// assert_eq!(line.reverse().reverse(), line);
+    /// ```
     pub fn reverse(&self) -> Line {
         Line {
             from: self.to,
             to: self.from
        }
     }
+    /// Calculates the slope of the given line.
+    ///
+    /// ```
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.5, 4.5);
+    /// let p3 = Point::new(0.0, 4.5);
+    /// let line = Line::new(p1, p2);
+    /// let vertical_line = Line::new(p1, p3);
+    ///
+    /// assert_eq!(line.slope(), Slope::Slope(3.0));
+    /// assert_eq!(vertical_line.slope(), Slope::Vertical);
+    /// ```
     pub fn slope(&self) -> Slope {
         if self.from.x == self.to.x {
             Slope::Vertical
@@ -55,6 +94,20 @@ impl Line {
             Slope::Slope((self.to.y - self.from.y) / (self.to.x - self.from.x))
         }
     }
+    /// Returns if two lines intersect.
+    ///
+    /// ```
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.5, 4.5);
+    /// let p3 = Point::new(0.0, 1.5);
+    /// let p4 = Point::new(2.0, 0.5);
+    /// let line1 = Line::new(p1, p2);
+    /// let line2 = Line::new(p3, p4);
+    ///
+    /// assert!(line1.intersects(&line2));
+    /// ```
     pub fn intersects(&self, line: &Line) -> bool {
         // first check if one point is an endpoint of both lines
         // this check is needed because otherwise precision problems surface
@@ -87,52 +140,75 @@ impl Line {
             (Slope::Slope(m1), Slope::Slope(m2)) => { // m*x +t = y
                 let t1 = self.from.y - m1 * self.from.x;
                 let t2 = line.from.y - m2 * line.from.x;
-                if m1 == m2 { t1 == t2 }
+                if m1 == m2 { t1 == t2 } //bounding boxes intersect
                 else {
-                    let x = (t2 - t1) / (m1 - m2);
+                    let x = (t2 - t1) / (m1 - m2); // x-coord of intersection point
                     s_min_x <= x && x <= s_max_x && // lies on &self
                     l_min_x <= x && x <= l_max_x    // lies on &line
+                    // TODO?: use an epsilon for the comparisons above
                 }
             }
         }
     }
+    /// Returns if a points lies on this line.
+    ///
+    /// ``
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.5, 4.5);
+    /// let p3 = Point::new(1.0, 3.0);
+    /// let line = Line::new(p1, p2);
+    ///
+    /// assert!(line.contains(p3));
+    /// ``
     fn contains(&self, p: Point) -> bool {
         self.intersects(&Line::new(p, p))
     }
 }
+/// A polygon (without holes) in the 2D-plane.
+/// Represented by a its vertex points in order.
 #[derive(Debug, PartialEq)]
 pub struct Polygon {
     points: Vec<Point>
 }
 impl Polygon {
+    /// Creates a new empty polygon.
     pub fn new() -> Polygon {
         Polygon {
             points: Vec::new()
         }
     }
+    /// Creates a new empty polygon with capacity for `c` vertex points.
     pub fn with_capacity(c: usize) -> Polygon {
         Polygon {
             points: Vec::with_capacity(c)
         }
     }
+    /// Creates a new polygon from the given points.
     pub fn from_points(pts: &[Point]) -> Polygon {
         Polygon {
             points: pts.to_vec() //TODO: do it without copying?!
         }
     }
+    /// Returns the number of vertices of this polygon.
     pub fn size(&self) -> usize {
         self.points.len()
     }
+    /// Adds a new vertex between the first and the last vertex of this polygon.
     pub fn add(&mut self, p: Point) {
         self.points.push(p);
     }
+    /// Return a slice of all the vertices of the polygon.
     pub fn points(&self) -> &[Point] {
         //self.points.clone()
         &self.points[..]
     }
+    /// Return a mutable slice of all the vertices of the polygon.
     pub fn points_mut(&mut self) -> &mut [Point] {
         &mut self.points[..]
     }
+    /// Returns all edges of ths polygon as `Vec` of `Line`s.
     pub fn edges(&self) -> Vec<Line> {
         if self.points.len() <= 1 { return Vec::new(); }
         let mut lines = Vec::with_capacity(self.points.len());
@@ -143,6 +219,7 @@ impl Polygon {
         }
         lines
     }
+    /// Returns whether this polygon is simple, i.e has no self intersections.
     pub fn is_simple(&self) -> bool {
         for l1 in self.edges() {
             for l2 in self.edges() {
@@ -159,6 +236,10 @@ impl Polygon {
         }
         true
     }
+    /// Returns whether the given point is contained in this polygon
+    /// (i.e. it lies in the interior or on the boundary).
+    /// This function uses the even-odd rule to determine insideness.
+    // TODO: example in doc
     pub fn contains(&self, p: Point) -> bool {
         /*
         Casts a horizontal ray to the Point p
