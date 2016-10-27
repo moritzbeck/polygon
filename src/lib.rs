@@ -56,6 +56,12 @@ impl Line {
         }
     }
     pub fn intersects(&self, line: &Line) -> bool {
+        // first check if one point is an endpoint of both lines
+        // this check is needed because otherwise precision problems surface
+        if self.from == line.from || self.from == line.to ||
+           self.to   == line.from || self.to   == line.to {
+            return true;
+        }
         let (s_min_x, s_max_x) = min_max(self.from.x, self.to.x);
         let (s_min_y, s_max_y) = min_max(self.from.y, self.to.y);
         let (l_min_x, l_max_x) = min_max(line.from.x, line.to.x);
@@ -140,9 +146,11 @@ impl Polygon {
     pub fn is_simple(&self) -> bool {
         for l1 in self.edges() {
             for l2 in self.edges() {
-                if l1.from == l2.from || l1.from == l2.to
-                    || l1.to == l2.from || l1.to == l2.to {
-                    break;
+                if l1.from == l2.from || l1.from == l2.to ||
+                   l1.to   == l2.from || l1.to   == l2.to {
+                    break; // TODO: fails for the edge case when a vertex has more
+                           //   than two incident edges, i.e. the polygon touches or
+                           //   crosses itself at a vertex.
                 }
                 if l1.intersects(&l2) {
                     return false;
@@ -213,6 +221,9 @@ impl Iterator for Polygon {
 
 #[cfg(test)]
 mod tests {
+    extern crate rand;
+
+    use self::rand::distributions::{IndependentSample, Range};
     use super::*;
 
     const P1: Point = Point{ x: 0., y: 0.};
@@ -285,6 +296,27 @@ mod tests {
         assert!(!VER6.intersects(&VER7), "Line does intersect one it shouldn't");
         assert!(!VER7.intersects(&VER6), "Line does intersect one it shouldn't");
     }
+    #[test]
+    fn line_intersects_works_rand_triangle() {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(1.0, 500.0);
+
+        for _ in 0..10000 {
+            let x1 = range.ind_sample(&mut rng);
+            let y1 = range.ind_sample(&mut rng);
+            let x2 = range.ind_sample(&mut rng);
+            let y2 = range.ind_sample(&mut rng);
+            let x3 = range.ind_sample(&mut rng);
+            let y3 = range.ind_sample(&mut rng);
+            let p1 = Point::new(x1, y1);
+            let p2 = Point::new(x2, y2);
+            let p3 = Point::new(x3, y3);
+            let l1 = Line::new(p1, p2);
+            let l2 = Line::new(p2, p3);
+            assert!(l1.intersects(&l2));
+            assert!(l2.intersects(&l1));
+        }
+    }// TODO: add tests where endpoints of the lines lie very close together (to check for precision problems)
     #[test]
     fn polygon_contains_works_1() {
         let points = [Point::new_u(0,0), Point::new_u(3,0), Point::new_u(4, 2), Point::new_u(1,2)];
