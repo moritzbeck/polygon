@@ -225,7 +225,7 @@ impl Polygon {
             for l2 in self.edges() {
                 if l1.from == l2.from || l1.from == l2.to ||
                    l1.to   == l2.from || l1.to   == l2.to {
-                    break; // TODO: fails for the edge case when a vertex has more
+                    continue; // TODO: fails for the edge case when a vertex has more
                            //   than two incident edges, i.e. the polygon touches or
                            //   crosses itself at a vertex.
                 }
@@ -456,5 +456,22 @@ mod tests {
         assert!(!polygon.contains(Point::new(4.0, 0.5)));
         assert!( polygon.contains(Point::new(4.0, 3.5)));
         assert!(!polygon.contains(Point::new(4.0, 4.5)));
+    }
+    #[test]
+    fn is_simple_works() {
+        let points = [Point::new(274.96843119671473, 383.51923995101777),
+                      Point::new(206.10110844061037, 158.0229249347057),
+                      Point::new(389.4722193425373, 220.6053166681628),
+                      Point::new(468.8266446074043, 10.428792883777806),
+                      Point::new(221.9383956061111, 291.53969226732926)];
+        let polygon = Polygon::from_points(&points);
+        assert!(!polygon.is_simple());
+        let points = [Point::new(392.8896421386376, 325.62334672370304),
+                      Point::new(169.53141009383438, 447.7137894321314),
+                      Point::new(403.17601678365895, 397.65944288976203),
+                      Point::new(264.2450152314188, 459.00996294545286),
+                      Point::new(393.4736279391549, 263.26340095968646)];
+        let polygon = Polygon::from_points(&points);
+        assert!(!polygon.is_simple());
     }
 }
