@@ -11,7 +11,7 @@ fn min_max(a: f64, b: f64) -> (f64, f64) {
 /// Describes the slope of a Line.
 #[derive(Debug, PartialEq)]
 pub enum Slope {
-    /// The line is exactly vertical, i.e l.from.x == l.to.x
+    /// The line is exactly vertical, i.e `line.from.x == line.to.x`.
     Vertical,
     /// The line is not vertical and the slope is given.
     Slope(f64)
@@ -58,13 +58,16 @@ impl Line {
     }
     /// Reverses the direction of the current line.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
     /// use polygon::*;
     ///
     /// let p1 = Point::new(0.0, 0.0);
     /// let p2 = Point::new(0.7, 1.5);
     /// let line = Line::new(p1, p2);
     ///
+    /// assert_eq!(line.reverse(), Line::new(p2, p1));
     /// assert_eq!(line.reverse().reverse(), line);
     /// ```
     pub fn reverse(&self) -> Line {
@@ -75,7 +78,9 @@ impl Line {
     }
     /// Calculates the slope of the given line.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
     /// use polygon::*;
     ///
     /// let p1 = Point::new(0.0, 0.0);
@@ -96,7 +101,9 @@ impl Line {
     }
     /// Returns if two lines intersect.
     ///
-    /// ```
+    /// # Examples
+    ///
+    /// ```rust
     /// use polygon::*;
     ///
     /// let p1 = Point::new(0.0, 0.0);
@@ -152,7 +159,9 @@ impl Line {
     }
     /// Returns if a points lies on this line.
     ///
-    /// ``
+    /// # Examples
+    ///
+    /// ```rust
     /// use polygon::*;
     ///
     /// let p1 = Point::new(0.0, 0.0);
@@ -161,13 +170,13 @@ impl Line {
     /// let line = Line::new(p1, p2);
     ///
     /// assert!(line.contains(p3));
-    /// ``
-    fn contains(&self, p: Point) -> bool {
+    /// ```
+    pub fn contains(&self, p: Point) -> bool {
         self.intersects(&Line::new(p, p))
     }
 }
 /// A polygon (without holes) in the 2D-plane.
-/// Represented by a its vertex points in order.
+/// Represented by its vertex points in order.
 #[derive(Debug, PartialEq)]
 pub struct Polygon {
     points: Vec<Point>
