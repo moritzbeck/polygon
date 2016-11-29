@@ -4,6 +4,4 @@ version = "0.1.0"
 authors = ["local@localhost <local@localhost>"]
 
 [dependencies]
-
-[dev-dependencies]
 rand = "0.3"

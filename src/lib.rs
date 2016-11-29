@@ -1,5 +1,13 @@
 #![warn(missing_docs)]
 
+//! Utilities for generating and manipulating polygons.
+
+extern crate rand;
+
+pub mod generate;
+
+use std::ops::{Add, Mul};
+
 fn min_max(a: f64, b: f64) -> (f64, f64) {
     if a <= b {
         (a, b)
@@ -37,6 +45,26 @@ impl Point {
         Point {
             x: x as f64,
             y: y as f64
+        }
+    }
+}
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+impl Mul<f64> for Point {
+    type Output = Self;
+
+    fn mul(self, rhs: f64) -> Self {
+        Point {
+            x: self.x * rhs,
+            y: self.y * rhs
         }
     }
 }
