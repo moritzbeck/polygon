@@ -7,6 +7,7 @@ use self::rand::{thread_rng, sample};
 use self::rand::distributions::{IndependentSample, Range};
 
 /// Describes the mode used to generate a polygon.
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Mode {
     /// Generates random points and then tries to disentangle the
     /// resulting polygon by swapping endpoints of intersecting lines.

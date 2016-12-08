@@ -205,7 +205,7 @@ impl Line {
 }
 /// A polygon (without holes) in the 2D-plane.
 /// Represented by its vertex points in order.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Polygon {
     points: Vec<Point>
 }
