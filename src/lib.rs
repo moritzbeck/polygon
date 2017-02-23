@@ -8,6 +8,7 @@ pub mod generate;
 
 use std::ops::{Add, Mul};
 
+// Needed because f64 doesn't implement `Ord`.
 fn min_max(a: f64, b: f64) -> (f64, f64) {
     if a <= b {
         (a, b)
@@ -21,7 +22,7 @@ fn min_max(a: f64, b: f64) -> (f64, f64) {
 pub enum Slope {
     /// The line is exactly vertical, i.e `line.from.x == line.to.x`.
     Vertical,
-    /// The line is not vertical and the slope is given.
+    /// The line is not vertical and the slope is the given value.
     Slope(f64)
 }
 /// A point in the 2D-plane.
@@ -34,7 +35,14 @@ pub struct Point {
 }
 impl Point {
     /// Creates a new Point with the given coordinates.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if either of the coordinates
+    /// is not a finite number (e.g. Infinity, NaN).
     pub fn new(x: f64, y: f64) -> Point {
+        assert!(x.is_finite());
+        assert!(y.is_finite());
         Point {
             x: x,
             y: y
@@ -61,7 +69,13 @@ impl Add for Point {
 impl Mul<f64> for Point {
     type Output = Self;
 
+    /// Muliplies a `Point` with a `f64`.
+    ///
+    /// # Panics
+    ///
+    /// Panics, if `rhs` is NaN.
     fn mul(self, rhs: f64) -> Self {
+        assert!(!rhs.is_nan());
         Point {
             x: self.x * rhs,
             y: self.y * rhs
