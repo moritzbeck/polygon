@@ -102,9 +102,7 @@ fn _quick_star_like(pol: &mut Polygon) {
 
     let mut rng = thread_rng();
     let sample = sample(&mut rng, 0..pol.size(), 3).into_iter()
-        //.inspect(|s| { println!("{:?}", s); })
         .map(|s| { pol.points()[s] })
-        //.inspect(|s| { println!("{:?}", s); })
         .collect::<Vec<_>>();
 
     // t0 + t1 + t2 == 1.0
