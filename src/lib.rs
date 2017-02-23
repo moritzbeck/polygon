@@ -340,6 +340,53 @@ impl Polygon {
             Slope::Slope(m) => lslope <= m
         }
     }
+    /// Returns whether this polygon is x-monotone.
+    ///
+    /// Tests for non-strict monotony, i.e. the polygon is allowed
+    /// to have vertical edges.
+    pub fn is_x_monotone(&self) -> bool {
+        use std::cmp::Ordering;
+
+        if self.points.len() <= 3 {
+            return true;
+        }
+
+        let cmp = |&(_, p1): &(usize, &Point), &(_, p2): &(usize, &Point)| {
+            if p1.x < p2.x {
+                Ordering::Less
+            } else if p1.x == p2.x {
+                Ordering::Equal
+            } else {
+                Ordering::Greater
+            }
+        };
+        let x_min_index = self.points.iter()
+            .enumerate()
+            .min_by(&cmp)
+            .expect("len > 3").0;
+        let x_max_index = self.points.iter()
+            .enumerate()
+            .max_by(&cmp)
+            .expect("len > 3").0;
+
+        let len = self.points.len();
+        let mut i = x_min_index;
+        while i != x_max_index {
+            // walk around the polygon from the leftmost to the rightmost point
+            if self.points[i].x > self.points[(i+1)%len].x {
+                return false;
+            }
+            i = (i + 1) % len;
+        }
+        while i != x_max_index {
+            // walk around the polygon from the leftmost to the rightmost point
+            if self.points[i].x > self.points[(i-1+len)%len].x {
+                return false;
+            }
+            i = (i - 1 + len) % len;
+        }
+        return true;
+    }
 }
 /*
 impl Iterator for Polygon {
@@ -524,5 +571,36 @@ mod tests {
                       Point::new(393.4736279391549, 263.26340095968646)];
         let polygon = Polygon::from_points(&points);
         assert!(!polygon.is_simple());
+    }
+    #[test]
+    fn is_x_monotone_works() {
+        let points = [Point::new_u(0, 1), Point::new_u(1, 2),
+            Point::new_u(2, 1), Point::new_u(1, 0)];
+        let polygon = Polygon::from_points(&points);
+        assert!(polygon.is_x_monotone());
+
+        let points = [Point::new_u(0, 1), Point::new_u(2, 2),
+            Point::new_u(1, 3), Point::new_u(4, 1)];
+        let polygon = Polygon::from_points(&points);
+        assert!(!polygon.is_x_monotone());
+//                8     6
+//   polygon =    |\   /|
+//                | \ / |
+//          a-----9  7  5
+//          |           |
+//          |           |
+//          |           |
+//          |           |
+//          |           |
+//          b--0     3--4
+//             |     |
+//             |     |
+//             1-----2
+        let points = [Point::new_u(1,1), Point::new_u(1,0), Point::new_u(3, 0),
+            Point::new_u(3,1), Point::new_u(4,1), Point::new_u(4,3),
+            Point::new_u(4,4), Point::new_u(3,3), Point::new_u(2,4),
+            Point::new_u(2,3), Point::new_u(0,3), Point::new_u(0,1)];
+        let polygon = Polygon::from_points(&points);
+        assert!(polygon.is_x_monotone());
     }
 }
