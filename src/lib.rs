@@ -270,7 +270,7 @@ impl Polygon {
         }
         lines
     }
-    /// Returns whether this polygon is simple, i.e has no self intersections.
+    /// Returns whether this polygon is simple, i.e. has no self intersections.
     pub fn is_simple(&self) -> bool {
         for l1 in self.edges() {
             for l2 in self.edges() {
