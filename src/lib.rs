@@ -1,6 +1,6 @@
-#![warn(missing_docs)]
-
 //! Utilities for generating and manipulating polygons.
+
+#![warn(missing_docs)]
 
 extern crate rand;
 
@@ -54,6 +54,13 @@ impl Point {
             x: x as f64,
             y: y as f64
         }
+    }
+    /// Trim the coordinates of the point.
+    pub fn trim_coordinates(&mut self, dec_places: i8) {
+        let factor = f64::powi(10.0, dec_places as i32);
+
+        self.x = (self.x * factor).trunc() / factor;
+        self.y = (self.y * factor).trunc() / factor;
     }
 }
 impl Add for Point {
@@ -218,6 +225,7 @@ impl Line {
     }
 }
 /// A polygon (without holes) in the 2D-plane.
+///
 /// Represented by its vertex points in order.
 #[derive(Debug, PartialEq, Clone)]
 pub struct Polygon {
@@ -422,6 +430,17 @@ mod tests {
     const VER7: Line = Line { from: P3, to: P7 };
     const VER8: Line = Line { from: P4, to: P8 };
     const HOR9: Line = Line { from: P5, to: P8 };
+
+    #[test]
+    fn point_trim_coordinates_works() {
+        let mut p = Point { x: 1.4567, y: -32.66732 };
+        p.trim_coordinates(4);
+        assert_eq!(p.x,   1.4567);
+        assert_eq!(p.y, -32.6673);
+        p.trim_coordinates(2);
+        assert_eq!(p.x,   1.45);
+        assert_eq!(p.y, -32.66);
+    }
 
     #[test]
     fn line_slope_works() {
