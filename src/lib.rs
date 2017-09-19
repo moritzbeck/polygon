@@ -6,7 +6,7 @@ extern crate rand;
 
 pub mod generate;
 
-use std::ops::{Add, Mul};
+use std::ops::{Add, Sub, Mul};
 
 // Needed because f64 doesn't implement `Ord`.
 fn min_max(a: f64, b: f64) -> (f64, f64) {
@@ -24,6 +24,149 @@ pub enum Slope {
     Vertical,
     /// The line is not vertical and the slope is the given value.
     Slope(f64)
+}
+/// Describes an angle in the plane
+#[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
+pub struct Angle(f64);
+
+impl Angle {
+    /// Returns an `Angle` that is zero.
+    pub fn zero() -> Angle {
+        Angle(0.0)
+    }
+    /// Returns an `Angle` representing a straight line, i.e. a half turn.
+    pub fn straight() -> Angle {
+        Angle(std::f64::consts::PI)
+    }
+    /// Returns an `Angle` representing a full turn.
+    pub fn full_turn() -> Angle {
+        Angle(2.0 * std::f64::consts::PI)
+    }
+    /// Creates an Angle from two points on the sides of the angle
+    /// and the vertex of the angle.
+    pub fn from_points(p1: &Point, v: &Point, p2: &Point) -> Angle {
+        let (x1, y1) = (p1.x - v.x, p1.y - v.y);
+        let (x2, y2) = (p2.x - v.x, p2.y - v.y);
+        let dot_product = x1 * x2 + y1 * y2;
+        let len1 = f64::sqrt(x1 * x1 + y1 * y1);
+        let len2 = f64::sqrt(x2 * x2 + y2 * y2);
+        let abs_angle = f64::acos(dot_product / len1 / len2);
+        let angle_sign = x1 * y2 - y1 * x2;
+        Angle(abs_angle * angle_sign.signum())
+    }
+    // TODO: change name (problematic "to_" suffix)
+    //pub fn to_x_axis(l: &Line) -> Angle {
+        //unimplemented!();
+    //}
+    /// Returns the angle value in radians.
+    pub fn radians(&self) -> f64 {
+        self.0
+    }
+    /// Returns the angle value in degrees.
+    pub fn degrees(&self) -> f64 {
+        self.radians().to_degrees()
+    }
+    /// Returns the angle value as a fraction of full turns.
+    pub fn turns(&self) -> f64 {
+        self.radians() / std::f64::consts::PI / 2.0
+    }
+    /// Determines if this angle is between two given ones
+    /// disregarding the number of turns.
+    pub fn is_between(&self, min: &Angle, max: &Angle) -> bool {
+        let min = &min.balanced();
+        let max = &max.balanced();
+        let s = self.balanced();
+        if min.0 < max.0 {
+            min.0 <= s.0 && s.0 <= max.0
+        } else {
+            min.0 <= s.0 || s.0 <= max.0
+        }
+    }
+    /// Makes negative angles positive and shrinks angles to less than one full turn.
+    /// Returns an angle α with 0° ≤ α < 360°.
+    pub fn positive(&self) -> Angle {
+        let turn = Angle::full_turn().0;
+        let angle = ((self.0 % turn) + turn) % turn;
+        Angle(angle)
+    }
+    /// Balances the angles such that -180° < α ≤ 180°.
+    pub fn balanced(&self) -> Angle {
+        let straight = Angle::straight().0;
+        let turn = Angle::full_turn().0;
+        let angle = if self.0 <= -straight {
+            let s = self.0 % turn;
+            if s <= -straight {
+                s + turn
+            } else {
+                s
+            }
+        } else if straight < self.0 {
+            let s = self.0 % turn;
+            if s > straight {
+                s - turn
+            } else {
+                s
+            }
+        } else {
+            self.0
+        };
+        Angle(angle)
+    }
+    /// Returns if the vectors `p1p2` and `p2p3` form a right turn.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(5.0, 0.0);
+    /// let p3 = Point::new(8.0, 1.0);
+    /// let p4 = Point::new(8.0, -1.0);
+    ///
+    /// assert!(!Angle::is_right_turn(&p1, &p2, &p3));
+    /// assert!( Angle::is_right_turn(&p1, &p2, &p4));
+    /// ```
+    pub fn is_right_turn(p1: &Point, p2: &Point, p3: &Point) -> bool {
+        let dx1 = p2.x - p1.x;
+        let dy1 = p2.y - p1.y;
+        let dx2 = p3.x - p2.x;
+        let dy2 = p3.y - p2.y;
+
+        dx1 * dy2 - dy1 * dx2 < 0.0
+    }
+    /// Returns if the vectors `p1p2` and `p2p3` form a left turn.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(5.0, 0.0);
+    /// let p3 = Point::new(8.0, 1.0);
+    /// let p4 = Point::new(8.0, -1.0);
+    ///
+    /// assert!( Angle::is_left_turn(&p1, &p2, &p3));
+    /// assert!(!Angle::is_left_turn(&p1, &p2, &p4));
+    /// ```
+    pub fn is_left_turn(p1: &Point, p2: &Point, p3: &Point) -> bool {
+        let dx1 = p2.x - p1.x;
+        let dy1 = p2.y - p1.y;
+        let dx2 = p3.x - p2.x;
+        let dy2 = p3.y - p2.y;
+
+        dx1 * dy2 - dy1 * dx2 > 0.0
+    }
+}
+impl Add for Angle {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Angle (
+            self.0 + other.0
+        )
+    }
 }
 /// A point in the 2D-plane.
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -55,6 +198,13 @@ impl Point {
             y: y as f64
         }
     }
+    /// Creates a new point at the origin, i.e. at (0, 0).
+    pub fn origin() -> Point {
+        Point {
+            x: 0.0,
+            y: 0.0
+        }
+    }
     /// Trim the coordinates of the point.
     pub fn trim_coordinates(&mut self, dec_places: i8) {
         let factor = f64::powi(10.0, dec_places as i32);
@@ -70,6 +220,16 @@ impl Add for Point {
         Point {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+impl Sub for Point {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Point {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }
@@ -89,7 +249,7 @@ impl Mul<f64> for Point {
         }
     }
 }
-/// A line in the 2D-plane.
+/// A line (segment) in the 2D-plane.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Line {
     /// starting point
@@ -148,7 +308,46 @@ impl Line {
             Slope::Slope((self.to.y - self.from.y) / (self.to.x - self.from.x))
         }
     }
-    /// Returns if two lines intersect.
+    /// Calculates the angle this line forms with the x-axis.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.5, 1.5);
+    /// let line = Line::new(p1, p2);
+    ///
+    /// let angle = line.angle().degrees();
+    ///
+    /// let abs_difference = (angle - 45.0).abs();
+    ///
+    /// assert!(abs_difference <= 1e-10);
+    /// ```
+    pub fn angle(&self) -> Angle {
+        let dx = self.to.x - self.from.x;
+        let dy = self.to.y - self.from.y;
+        Angle(dy.atan2(dx))
+    }
+    /// Returns if a points lies on this line.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(0.0, 0.0);
+    /// let p2 = Point::new(1.5, 4.5);
+    /// let p3 = Point::new(1.0, 3.0);
+    /// let line = Line::new(p1, p2);
+    ///
+    /// assert!(line.contains(p3));
+    /// ```
+    pub fn contains(&self, p: Point) -> bool {
+        self.intersects(&Line::new(p, p))
+    }
+    /// Returns if two line segments intersect.
     ///
     /// # Examples
     ///
@@ -196,7 +395,7 @@ impl Line {
             (Slope::Slope(m1), Slope::Slope(m2)) => { // m*x +t = y
                 let t1 = self.from.y - m1 * self.from.x;
                 let t2 = line.from.y - m2 * line.from.x;
-                if m1 == m2 { t1 == t2 } //bounding boxes intersect
+                if m1 == m2 { t1 == t2 } // because bounding boxes intersect
                 else {
                     let x = (t2 - t1) / (m1 - m2); // x-coord of intersection point
                     s_min_x <= x && x <= s_max_x && // lies on &self
@@ -206,22 +405,142 @@ impl Line {
             }
         }
     }
-    /// Returns if a points lies on this line.
+    /// Returns if this line segment intersects a ray.
+    ///
+    /// The ray is described by a `Line` struct:
+    /// The ray starts at `ray.from` and goes through `ray.to`
+    /// extending infinitely.
+    ///
+    /// # Panics
+    /// Panics if ray is degenerate, i.e. `ray.from == ray.to`.
     ///
     /// # Examples
     ///
     /// ```rust
     /// use polygon::*;
     ///
-    /// let p1 = Point::new(0.0, 0.0);
-    /// let p2 = Point::new(1.5, 4.5);
-    /// let p3 = Point::new(1.0, 3.0);
+    /// let p1 = Point::new(4.0, 8.2);
+    /// let p2 = Point::new(5.0, 8.4);
+    /// let p3 = Point::new(0.0, 0.0);
+    /// let p4 = Point::new(1.5, 3.0);
     /// let line = Line::new(p1, p2);
+    /// let ray = Line::new(p3, p4);
     ///
-    /// assert!(line.contains(p3));
+    /// assert!(line.intersects_ray(&ray));
     /// ```
-    pub fn contains(&self, p: Point) -> bool {
-        self.intersects(&Line::new(p, p))
+    pub fn intersects_ray(&self, ray: &Line) -> bool {
+        use Slope::{Vertical, Slope};
+        assert!(ray.from != ray.to);
+
+        if self.from == ray.from || self.to == ray.from {
+            return true;
+        }
+        let upward;
+        let rightward;
+        if ray.from.x <= ray.to.x {
+            if self.from.x < ray.from.x && self.to.x < ray.from.x {
+                return false;
+            }
+            rightward = true;
+        } else {
+            if self.from.x > ray.from.x && self.to.x > ray.from.x {
+                return false;
+            }
+            rightward = false;
+        }
+        if ray.from.y <= ray.to.y {
+            if self.from.y < ray.from.y && self.to.y < ray.from.y {
+                return false;
+            }
+            upward = true;
+        } else {
+            if self.from.y > ray.from.y && self.to.y > ray.from.y {
+                return false;
+            }
+            upward = false;
+        }
+        match (self.slope(), ray.slope()) {
+            (Vertical, Vertical)  => {
+                self.from.x == ray.from.x
+            },
+            (Vertical, Slope(m_r)) => { // m*x +t = y
+                let t_r = ray.from.y - m_r * ray.from.x;
+                let y = m_r * self.from.x + t_r; // intersection y-coord
+                let (y_min, y_max) = min_max(self.from.y, self.to.y);
+
+                y_min <= y && y <= y_max
+            },
+            (Slope(m), Vertical) => { // m*x +t = y
+                let t = self.from.y - m * self.from.x;
+                let y = m * ray.from.x + t; // intersection y-coord
+
+                (upward && ray.from.y <= y) || (!upward && ray.from.y >= y)
+
+            },
+            (Slope(m), Slope(m_r)) => { // m*x +t = y
+                let t = self.from.y - m * self.from.x;
+                let t_r = ray.from.y - m_r * ray.from.x;
+                // m * x + t = m_r * x + t_r
+                if m == m_r { t == t_r } // because one point lies in the right quadrant
+                else {
+                    let x = (t_r - t) / (m - m_r);
+                    let (x_min, x_max) = min_max(self.from.x, self.to.x);
+                    x_min <= x && x <= x_max && // line contains this x-coord
+                        ((rightward && ray.from.x <= x) || // ray contains this x-coord
+                        (!rightward && ray.from.x >= x))
+                }
+            }
+        }
+    }
+    /// Computes the unique point where two lines intersect or
+    /// `None` if the lines are parallel (even if they are identical).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use polygon::*;
+    ///
+    /// let p1 = Point::new(1.0, 1.0);
+    /// let p2 = Point::new(5.0, 5.0);
+    /// let p3 = Point::new(-1.0, 0.0);
+    /// let p4 = Point::new(1.5, 0.0);
+    /// let line1 = Line::new(p1, p2);
+    /// let line2 = Line::new(p3, p4);
+    ///
+    /// assert_eq!(line1.line_intersection_with(&line2), Some(Point::new(0.0, 0.0)));
+    /// assert_eq!(line2.line_intersection_with(&line1), Some(Point::new(0.0, 0.0)));
+    ///
+    /// // If there is no unique intersection point `None` is returned.
+    /// assert_eq!(line1.line_intersection_with(&line1), None);
+    /// ```
+    pub fn line_intersection_with(&self, line: &Line) -> Option<Point> {
+        use Slope::{Vertical, Slope};
+        match (self.slope(), line.slope()) {
+            (Vertical, Vertical) => None,
+            (Vertical, Slope(m)) => {
+                let t = line.from.y - m * line.from.x;
+                let y = m * self.from.x + t;
+                Some(Point::new(self.from.x, y))
+            },
+            (Slope(m), Vertical) => {
+                let t = self.from.y - m * self.from.x;
+                let y = m * line.from.x + t;
+                Some(Point::new(line.from.x, y))
+            },
+            (Slope(m1), Slope(m2)) => {
+                if m1 == m2 {
+                    None
+                } else {
+                    let t1 = self.from.y - m1 * self.from.x;
+                    let t2 = line.from.y - m2 * line.from.x;
+
+                    let x = (t1 - t2) / (m2 - m1);
+                    let y = m1 * x + t1;
+                    //assert_eq!(y, m2 * x + t2); // these should be (almost) equal
+                    Some(Point::new(x, y))
+                }
+            }
+        }
     }
 }
 /// A polygon (without holes) in the 2D-plane.
@@ -295,6 +614,16 @@ impl Polygon {
         }
         true
     }
+    /// Determines if this polygon is stored in *c*ounter *c*lockwise *o*rder.
+    pub fn is_ccw(&self) -> bool {
+        // Computes double the signed area.
+        // This is negative iff the polygon is in ccw order.
+        let p = self.points();
+        let last = self.size() - 1;
+        self.points().windows(2)
+            .map(|pts| (pts[1].x - pts[0].x) * (pts[1].y + pts[0].y))
+            .sum::<f64>() + (p[0].x - p[last].x) * (p[0].y + p[last].y) < 0.0
+    }
     /// Returns whether the given point is contained in this polygon
     /// (i.e. it lies in the interior or on the boundary).
     /// This function uses the even-odd rule to determine insideness.
@@ -347,6 +676,20 @@ impl Polygon {
             Slope::Vertical => min_x == l_lower_point.x,
             Slope::Slope(m) => lslope <= m
         }
+    }
+    /// Return whether the given point lies on the boundary of
+    /// this polygon.
+    pub fn lies_on_boundary(&self, p: Point) -> bool {
+        if self.points.len() == 0 {
+            return false;
+        }
+        if self.points.len() == 1 {
+            return self.points[0] == p;
+        }
+        for l in self.edges() {
+            if l.contains(p) { return true; }
+        }
+        false
     }
     /// Returns whether this polygon is x-monotone.
     ///
@@ -432,6 +775,44 @@ mod tests {
     const HOR9: Line = Line { from: P5, to: P8 };
 
     #[test]
+    fn angle_balanced_works() {
+        let eps = 1e-11;
+
+        let turn = Angle(std::f64::consts::PI * 2.0);
+        let a1 = Angle(std::f64::consts::FRAC_PI_4);
+        let a2 = Angle(std::f64::consts::FRAC_PI_3);
+        let a3 = Angle(std::f64::consts::FRAC_PI_2);
+
+        let m1 = Angle(-std::f64::consts::FRAC_PI_4);
+        let m2 = Angle(-std::f64::consts::FRAC_PI_3);
+        let m3 = Angle(-std::f64::consts::FRAC_PI_2);
+
+
+        assert_eq!(a1, a1.balanced());
+        assert_eq!(a2, a2.balanced());
+        assert_eq!(a3, a3.balanced());
+
+        assert!(( a1.0 - (a1 + turn).balanced().0 ).abs() < eps);
+        assert!(( a2.0 - (a2 + turn).balanced().0 ).abs() < eps);
+        assert!(( a3.0 - (a3 + turn).balanced().0 ).abs() < eps);
+
+        assert_eq!(m1, m1.balanced());
+        assert_eq!(m2, m2.balanced());
+        assert_eq!(m3, m3.balanced());
+
+        assert!(( m1.0 - (m1 + turn).balanced().0 ).abs() < eps);
+        assert!(( m2.0 - (m2 + turn).balanced().0 ).abs() < eps);
+        assert!(( m3.0 - (m3 + turn).balanced().0 ).abs() < eps);
+    }
+    #[test]
+    fn angle_right_left_turn_works() {
+        assert!(!Angle::is_right_turn(&P1, &P3, &P7));
+        assert!(!Angle::is_left_turn (&P1, &P3, &P7));
+        assert!( Angle::is_right_turn(&P1, &P3, &P4));
+        assert!( Angle::is_right_turn(&P1, &P3, &P8));
+    }
+
+    #[test]
     fn point_trim_coordinates_works() {
         let mut p = Point { x: 1.4567, y: -32.66732 };
         p.trim_coordinates(4);
@@ -456,6 +837,21 @@ mod tests {
         assert_eq!(VER6.slope(),           Slope::Vertical);
         assert_eq!(VER7.slope(),           Slope::Vertical);
         assert_eq!(VER8.slope(),           Slope::Vertical);
+
+        let mut rng = rand::thread_rng();
+        let range = Range::new(1.0, 500.0);
+
+        for _ in 0..10000 {
+            let x1 = range.ind_sample(&mut rng);
+            let y1 = range.ind_sample(&mut rng);
+            let x2 = range.ind_sample(&mut rng);
+            let y2 = range.ind_sample(&mut rng);
+            let p1 = Point::new(x1, y1);
+            let p2 = Point::new(x2, y2);
+            let l1 = Line::new(p1, p2);
+
+            assert_eq!(l1.slope(), l1.reverse().slope());
+        }
     }
     #[test]
     fn line_intersects_works_both_w_slope() {
@@ -515,6 +911,12 @@ mod tests {
             assert!(l2.intersects(&l1));
         }
     }// TODO: add tests where endpoints of the lines lie very close together (to check for precision problems)
+    #[test]
+    fn line_intersects_ray_works() {
+        assert!(Line { from: Point { x: 145., y: 115. }, to: Point { x: 151., y: 105. }}.intersects_ray(
+            &Line { from: Point { x: 150., y: 311. }, to: Point { x: 150., y: 187. } }
+        ));
+    }
     #[test]
     fn polygon_contains_works_1() {
         let points = [Point::new_u(0,0), Point::new_u(3,0), Point::new_u(4, 2), Point::new_u(1,2)];
