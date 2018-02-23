@@ -66,7 +66,7 @@ impl Polygon {
     }
     /// Rounds all coordinates to `dec_places` decimal places.
     pub fn trim_coordinates(&mut self, dec_places: i8) {
-        for mut p in &mut self.points {
+        for p in &mut self.points {
             p.trim_coordinates(dec_places);
         }
     }
@@ -178,7 +178,7 @@ impl Polygon {
         });
         //println!("{:#?}", self.points);
         { // new scope for the borrow in `let mut points = self.points_mut();`.
-            let mut points = self.points_mut();
+            let points = self.points_mut();
 
             let mut idx_leftmost = 0;
             // The lower chain starts at index n-1 and ends at index `idx_leftmost`.
@@ -239,7 +239,7 @@ impl Polygon {
 
         let mut rng = rand::thread_rng();
         {
-        let mut points = self.points_mut();
+        let points = self.points_mut();
 
         // points[0] is the leftmost point
         // points[..rightmost_idx] is the lower chain
