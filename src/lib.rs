@@ -729,12 +729,13 @@ impl Polygon {
             }
             i = (i + 1) % len;
         }
+        i = x_min_index;
         while i != x_max_index {
             // walk around the polygon from the leftmost to the rightmost point
-            if self.points[i].x > self.points[(i-1+len)%len].x {
+            if self.points[i].x > self.points[(len + i-1)%len].x {
                 return false;
             }
-            i = (i - 1 + len) % len;
+            i = (len + i - 1) % len;
         }
         return true;
     }
@@ -1000,8 +1001,11 @@ mod tests {
         let polygon = Polygon::from_points(&points);
         assert!(polygon.is_x_monotone());
 
-        let points = [Point::new_u(0, 1), Point::new_u(2, 2),
+        let mut points = [Point::new_u(0, 1), Point::new_u(2, 2),
             Point::new_u(1, 3), Point::new_u(4, 1)];
+        let polygon = Polygon::from_points(&points);
+        assert!(!polygon.is_x_monotone());
+        points.reverse();
         let polygon = Polygon::from_points(&points);
         assert!(!polygon.is_x_monotone());
 //                8     6
